@@ -32,7 +32,12 @@ app.get('/fetch', (req, res) => {
 
 app.get('/urls', (req, res) => {
   const templeateVars = {urls: urlDatabase };
-  res.render("urls_index", templeateVars)
+  res.render("urls_index", templeateVars);
+}); 
+
+app.get('/urls/:id', (req, res) => {
+  const templeateVars = { id: req.params.id, longURL: "www.google.com"};
+  res.render('urls_show', templeateVars);
 }); 
 
 
