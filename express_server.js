@@ -47,25 +47,35 @@ app.post("/urls", (req, res) => {
 });
 
 app.get('/urls/:id', (req, res) => {
-  const templeateVars = { id: req.params.id, longURL: "www.google.com"};
+  const shortURL = req.params.id;
+  const longURL = urlDatabase[shortURL];
+  const templeateVars = { id: shortURL, longURL};
   res.render('urls_show', templeateVars);
 }); 
 
 app.post('/urls', (req, res) => {
   const id =  generateRandomString();
-  urlDatabase[id] = req.body.url; 
+  urlDatabase[id] = req.body.longURL; 
   res.redirect(`/urls/${id}`);
 })
 
-app.get("/urls/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id]; 
-  res.redirect(longURL);
-})
-
-app.post('/urls/:id/delete', (req, res) =>{
-  delete urlDatabase[req.params.id]; 
+app.get('/urls/:id/delete', (req, res) =>{
+  const shortURL = req.params.id;
+  delete urlDatabase[shortURL]; 
   res.redirect("/urls");
 });
+
+app.post('/urls/:id/edit', (req, res) => {
+  const shortURL = req.params.id;
+  urlDatabase[shortURL] = req.body.editURL;
+  res.redirect('/urls');
+});
+
+app.get('/u/:id', (req, res) =>{
+  const shortURL = req.params.id; 
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
+})
 
 
 app.listen(PORT, () =>{
