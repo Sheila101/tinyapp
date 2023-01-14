@@ -2,6 +2,7 @@ const express = require("express");
 const app = express(); 
 const PORT = 8080; 
 
+app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs")
 
 const urlDatabase = {
@@ -35,13 +36,25 @@ app.get('/urls', (req, res) => {
   res.render("urls_index", templeateVars);
 }); 
 
+//Shows the form
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+app.post("/urls", (req, res) => {
+  console.log(req.body); //Log the POST request body to the console
+  res.send("ok"); 
+});
+
 app.get('/urls/:id', (req, res) => {
   const templeateVars = { id: req.params.id, longURL: "www.google.com"};
   res.render('urls_show', templeateVars);
 }); 
 
-
-
 app.listen(PORT, () =>{
   console.log(`Example app listenining on port ${PORT}!`); 
 });
+
+function generateRandomString(){
+  let randomString = Math.random().toString(36).substring(3, 9); 
+}
