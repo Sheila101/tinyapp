@@ -51,8 +51,20 @@ app.get('/urls/:id', (req, res) => {
   res.render('urls_show', templeateVars);
 }); 
 
+app.post('/urls', (req, res) => {
+  const id =  generateRandomString();
+  urlDatabase[id] = req.body.url; 
+  res.redirect(`/urls/${id}`);
+})
+
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id]; 
+  res.redirect(longURL);
+})
+
+
 app.listen(PORT, () =>{
-  console.log(`Example app listenining on port ${PORT}!`); 
+  
 });
 
 function generateRandomString(){
