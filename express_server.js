@@ -1,11 +1,10 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
-
 const app = express(); 
 const PORT = 8080; 
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser);
+app.use(cookieParser());
 app.set("view engine", "ejs")
 
 const urlDatabase = {
@@ -35,13 +34,19 @@ app.get('/fetch', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const templeateVars = {urls: urlDatabase };
+  const templeateVars = {username: req.cookies["username"], 
+  urls: urlDatabase, 
+   };
   res.render("urls_index", templeateVars);
 }); 
 
 //Shows the form
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templeateVars = {
+    username: req.cookies['username'],
+
+  };
+  res.render("urls_new", templeateVars);
 });
 
 app.post("/urls", (req, res) => {
@@ -52,7 +57,11 @@ app.post("/urls", (req, res) => {
 app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
   const longURL = urlDatabase[shortURL];
-  const templeateVars = { id: shortURL, longURL};
+  const templeateVars = {
+    username: req.cookies['username'],
+    id: shortURL,
+    longURL,
+  };
   res.render('urls_show', templeateVars);
 }); 
 
@@ -78,11 +87,25 @@ app.get('/u/:id', (req, res) =>{
   const shortURL = req.params.id; 
   const longURL = urlDatabase[shortURL];
   res.redirect(longURL);
-})
+});
 
+app.post('/login', (req, res) => {
+  const username = req.body.username;
+  
+  res.cookie("username", username);
+  if(username){
+    console.log(`You have successfully logged in with ${username}`)
+  }
+  res.redirect('/urls');
+});
+
+app.post('/logout', (req, res) => {
+
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
 
 app.listen(PORT, () =>{
-  
 });
 
 function generateRandomString(){
