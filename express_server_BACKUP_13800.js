@@ -1,28 +1,23 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+<<<<<<< HEAD
+
+=======
+>>>>>>> feature/cookies
 const app = express(); 
 const PORT = 8080; 
 
 app.use(express.urlencoded({ extended: true }));
+<<<<<<< HEAD
+app.use(cookieParser);
+=======
 app.use(cookieParser());
+>>>>>>> feature/cookies
 app.set("view engine", "ejs")
 
 const urlDatabase = {
   'b2xVn2': 'http://www.lighthouselabs.ca',
   '9sm5xK': 'http://www.google.com',
-};
-
-const users = {
-  userRandomID: {
-    id: 'userRandomID',
-    email: 'user@example.com',
-    password: 'purple-monkey-dinosaur',
-  },
-  user2RandomID: {
-    id: 'user2RandomID',
-    email: 'user2@example.com',
-    password: 'dishwasher-funk',
-  },
 };
 
 app.get("/", (req, res) => {
@@ -47,23 +42,17 @@ app.get('/fetch', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const templeateVars = { 
+  const templeateVars = {username: req.cookies["username"], 
   urls: urlDatabase, 
-  user: users[req.cookies["user_id"]],
    };
-   console.log(users);
-   console.log(req.cookies["user_id"]);
-
-  console.log(templeateVars); 
   res.render("urls_index", templeateVars);
-  // console.log(users[req.cookies["user_id"]]);
-  
 }); 
 
 //Shows the form
 app.get("/urls/new", (req, res) => {
   const templeateVars = {
-    user: users[req.cookies['user_id']],
+    username: req.cookies['username'],
+
   };
   res.render("urls_new", templeateVars);
 });
@@ -77,7 +66,7 @@ app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
   const longURL = urlDatabase[shortURL];
   const templeateVars = {
-    user: users[req.cookies["user_id"]],
+    username: req.cookies['username'],
     id: shortURL,
     longURL,
   };
@@ -124,42 +113,9 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 
-app.get('/register', (req, res) => {
-  res.render('register');
- 
-});
-
-app.post('/register', (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  //create new user
-  const user_id = generateRandomString();
-  users[user_id] = {
-    id: user_id,
-    email,
-    password,
-  };
-  console.log(users);
-
-  //check if user already exists
-  for (const key in users) {
-    if (key.email === email) {
-      return res
-        .status(400)
-        .send(`User with that email ${email} already exists`);
-    }
-  }
-
-  res.cookie('user_id', user_id);
-  res.redirect('/urls');
-});
-
-function generateRandomString() {
-  let randomString = Math.random().toString(36).substring(3, 9);
-  return randomString; 
-}
-
 app.listen(PORT, () =>{
 });
 
+function generateRandomString(){
+  let randomString = Math.random().toString(36).substring(3, 9); 
+}
