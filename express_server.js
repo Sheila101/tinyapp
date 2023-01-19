@@ -1,7 +1,12 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+
+const {generateRandomString, getUserByEmail} = require('./helper');
+const { render } = require("ejs");
+
 const app = express(); 
 const PORT = 8080; 
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -109,19 +114,36 @@ app.get('/u/:id', (req, res) =>{
 });
 
 app.post('/login', (req, res) => {
-  const username = req.body.username;
-  
-  res.cookie("username", username);
-  if(username){
-    console.log(`You have successfully logged in with ${username}`)
-  }
+  const email = req.body.email;
+  const password = req.body.password;
+
+   //search the users database for the user
+    let foundUser;
+    foundUser = getUserByEmail(email, users)
+    console.log(`foundUser is ${foundUser}`)
+
+    //if no user, return 400 (bad request)
+    if (!foundUser) {
+        return res.status(400).send(`No user with email ${email} found`);
+    }
+
+    // compare user password to request password
+    if (users[foundUser].password !== password) {
+        return res.status(401).send('Incorrect password');
+    }
+
+  res.cookie('user_id', foundUser);
   res.redirect('/urls');
+});
+
+app.get('/login', (req,res) => {
+  res.render('login');
 });
 
 app.post('/logout', (req, res) => {
 
-  res.clearCookie('username');
-  res.redirect('/urls');
+  res.clearCookie('user_id');
+  res.redirect('/login');
 });
 
 app.get('/register', (req, res) => {
@@ -133,6 +155,12 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  //check if user already exists
+  const user = getUserByEmail(email, users);
+  if (user) {
+    return res.status(400).send(`User with that email ${email} already exists`);
+  }
+
   //create new user
   const user_id = generateRandomString();
   users[user_id] = {
@@ -140,25 +168,14 @@ app.post('/register', (req, res) => {
     email,
     password,
   };
+
   console.log(users);
+    res.cookie('user_id', user_id);
+    res.redirect('/urls');
 
-  //check if user already exists
-  for (const key in users) {
-    if (key.email === email) {
-      return res
-        .status(400)
-        .send(`User with that email ${email} already exists`);
-    }
-  }
-
-  res.cookie('user_id', user_id);
-  res.redirect('/urls');
 });
 
-function generateRandomString() {
-  let randomString = Math.random().toString(36).substring(3, 9);
-  return randomString; 
-}
+
 
 app.listen(PORT, () =>{
 });
