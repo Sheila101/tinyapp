@@ -70,11 +70,17 @@ app.get("/urls/new", (req, res) => {
   const templeateVars = {
     user: users[req.cookies['user_id']],
   };
+  if(!req.cookies.user_id){
+    res.send('<html><body><h2>You cannot shorten URLS because you are not logged in </h2></body></html>\n'); 
+  }
   res.render("urls_new", templeateVars);
 });
 
 app.post("/urls", (req, res) => {
   console.log(req.body); //Log the POST request body to the console
+   if (!req.cookies.user_id) {
+     res.redirect('/login');
+   }
   res.send("ok"); 
 });
 
@@ -110,6 +116,11 @@ app.post('/urls/:id/edit', (req, res) => {
 app.get('/u/:id', (req, res) =>{
   const shortURL = req.params.id; 
   const longURL = urlDatabase[shortURL];
+  if(!urlDatabase.id){
+    res.send(
+      '<html><body><h2>That ID does not exist in the database</h2></body></html>\n'
+    );
+  }
   res.redirect(longURL);
 });
 
