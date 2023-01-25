@@ -2,7 +2,7 @@ const express = require("express");
 const cookiesSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
 
-const {generateRandomString, getUserByEmail} = require('./helper');
+const {generateRandomString, getUserByEmail} = require('./helpers');
 const { render } = require("ejs");
 
 const app = express(); 
@@ -10,12 +10,20 @@ const PORT = 8080;
 
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cookiesSession());
+app.use(cookiesSession({
+  keys: ["monkey"]
+}));
 app.set("view engine", "ejs")
 
 const urlDatabase = {
-  'b2xVn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com',
+  b6UTxQ: {
+    longURL: 'https://www.tsn.ca',
+    userID: 'aJ48lW',
+  },
+  i3BoGr: {
+    longURL: 'https://www.google.ca',
+    userID: 'aJ48lW',
+  },
 };
 
 const users = {
@@ -30,8 +38,6 @@ const users = {
     password: 'dishwasher-funk',
   },
 };
-
-users
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -57,7 +63,7 @@ app.get('/fetch', (req, res) => {
 app.get('/urls', (req, res) => {
   const templeateVars = {
     urls: urlDatabase,
-    user: users[req.session.user_id = 'user_id'],
+    user: users[req.session.user_id],
   };
    console.log(users);
    console.log(req.session.user_id);
@@ -81,17 +87,10 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templeateVars);
 });
 
-app.post("/urls", (req, res) => {
-  console.log(req.body); //Log the POST request body to the console
-   if (!req.session.user_id) {
-     res.redirect('/login');
-   }
-  res.send("ok"); 
-});
 
 app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL];
+  const longURL = urlDatabase[shortURL].longURL;
   const templeateVars = {
     user: users[req.session.user_id = 'user_id'],
     id: shortURL,
@@ -101,8 +100,15 @@ app.get('/urls/:id', (req, res) => {
 }); 
 
 app.post('/urls', (req, res) => {
+   if (!req.session.user_id) {
+     res.redirect('/login');
+   }
+ 
   const id =  generateRandomString();
-  urlDatabase[id] = req.body.longURL; 
+  urlDatabase[id] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id,
+  }; 
   res.redirect(`/urls/${id}`);
 })
 
@@ -114,7 +120,7 @@ app.get('/urls/:id/delete', (req, res) =>{
 
 app.post('/urls/:id/edit', (req, res) => {
   const shortURL = req.params.id;
-  urlDatabase[shortURL] = req.body.editURL;
+  urlDatabase[shortURL].longURL = req.body.editURL;
   res.redirect('/urls');
 });
 
@@ -148,7 +154,7 @@ app.post('/login', (req, res) => {
     if (!bcrypt.compareSync('purple-monkey-dinosaur', hashedPassword)) {
       return res.status(401).send('Incorrect password');
     }
-req.session.user_id = 'foundUser';
+req.session.user_id = foundUser.id;
  
   res.redirect('/urls');
 });
@@ -159,7 +165,7 @@ app.get('/login', (req,res) => {
 
 app.post('/logout', (req, res) => {
 
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/login');
 });
 
@@ -190,7 +196,7 @@ app.post('/register', (req, res) => {
   users[user_id].password = bcrypt.hashSync(password, 10);
 
   console.log(users);
-    req.session.user_id = 'user_id';
+    req.session.user_id = user_id;
     res.redirect('/urls');
 
 });

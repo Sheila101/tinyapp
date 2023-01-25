@@ -6,10 +6,19 @@ function generateRandomString() {
 function getUserByEmail(email, users) {
   for (const key in users) {
     if (users[key].email === email) {
-      return users[key].id; 
+      return users[key]; 
     }
   }
   return null;
+}
+function urlsForUser(id, urlDatabase){
+  const urls = {};
+  for(const shortURL in urlDatabase){
+    if (urlDatabase[shortURL].userID === id) {
+      urls[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return urls;
 }
 
 module.exports = { getUserByEmail, generateRandomString };
