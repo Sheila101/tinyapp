@@ -1,20 +1,20 @@
 const express = require("express");
 const cookiesSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
+const app = express();
+const PORT = 8080; 
 
 const {generateRandomString, getUserByEmail} = require('./helpers');
 const { render } = require("ejs");
 
-const app = express(); 
-const PORT = 8080; 
-
-
+//MiddleWare
 app.use(express.urlencoded({ extended: true }));
 app.use(cookiesSession({
   keys: ["monkey"]
 }));
 app.set("view engine", "ejs")
 
+//Databse
 const urlDatabase = {
   b6UTxQ: {
     longURL: 'https://www.tsn.ca',
@@ -43,6 +43,7 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+//Response with database as a JSON file
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -60,6 +61,7 @@ app.get('/fetch', (req, res) => {
   res.send(`a = ${a}`);
 });
 
+//Routing to urls page
 app.get('/urls', (req, res) => {
   const templeateVars = {
     urls: urlDatabase,
@@ -74,7 +76,7 @@ app.get('/urls', (req, res) => {
   
 }); 
 
-//Shows the form
+//Shows the form to add new urls
 app.get("/urls/new", (req, res) => {
   const templeateVars = {
     user: users[req.session.user_id = 'user_id'],
@@ -87,7 +89,7 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templeateVars);
 });
 
-
+//Responds with the url with the specific id
 app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
   const longURL = urlDatabase[shortURL].longURL;
@@ -112,12 +114,14 @@ app.post('/urls', (req, res) => {
   res.redirect(`/urls/${id}`);
 })
 
+//Functinality for user to delete
 app.get('/urls/:id/delete', (req, res) =>{
   const shortURL = req.params.id;
   delete urlDatabase[shortURL]; 
   res.redirect("/urls");
 });
 
+//Functinality for user to edit
 app.post('/urls/:id/edit', (req, res) => {
   const shortURL = req.params.id;
   urlDatabase[shortURL].longURL = req.body.editURL;
