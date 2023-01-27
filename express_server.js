@@ -4,13 +4,17 @@ const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; 
 
-const {generateRandomString, getUserByEmail} = require('./helpers');
+const {
+  generateRandomString,
+  getUserByEmail,
+  urlsForUser,
+} = require('./helpers');
 const { render } = require("ejs");
 
 //MiddleWare
 app.use(express.urlencoded({ extended: true }));
 app.use(cookiesSession({
-  keys: ["monkey"]
+  keys: ["flower"]
 }));
 app.set("view engine", "ejs")
 
@@ -30,7 +34,7 @@ const users = {
   userRandomID: {
     id: 'userRandomID',
     email: 'user@example.com',
-    password: 'purple-monkey-dinosaur',
+    password: bcrypt.hashSync('purple-monkey-dinosaur'),
   },
   user2RandomID: {
     id: 'user2RandomID',
@@ -63,8 +67,17 @@ app.get('/fetch', (req, res) => {
 
 //Routing to urls page
 app.get('/urls', (req, res) => {
+  //check if user exists
+   if (!req.session.user_id) {
+     //return res.redirect('/login');
+      return res.send(
+        '<html><body><h2>You cannot shorten URLS because you are not logged in </h2></body></html>\n'
+      );
+   }
+   const userUrlDatabase = urlsForUser(req.session.user_id, urlDatabase);
+
   const templeateVars = {
-    urls: urlDatabase,
+    urls: userUrlDatabase,
     user: users[req.session.user_id],
   };
    console.log(users);
@@ -82,9 +95,7 @@ app.get("/urls/new", (req, res) => {
     user: users[req.session.user_id = 'user_id'],
   };
   if (!req.session.user_id) {
-    res.send(
-      '<html><body><h2>You cannot shorten URLS because you are not logged in </h2></body></html>\n'
-    );
+    return res.redirect('/login');
   }
   res.render("urls_new", templeateVars);
 });
@@ -92,6 +103,22 @@ app.get("/urls/new", (req, res) => {
 //Responds with the url with the specific id
 app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
+  if (!urlDatabase[shortURL]) {
+    return res.send(
+      '<html><body><h2>The short URL does not exist</h2></body></html>\n'
+    );
+  }
+  if(!req.session.user_id){
+    return res.send(
+      '<html><body><h2>You need to be logged in to view this page</h2></body></html>\n'
+    );
+  } 
+
+  if(req.session.user_id !== urlDatabase[shortURL].userID){
+     return res.send(
+       '<html><body><h2>You are not the owner of this URL</h2></body></html>\n'
+     );
+  }
   const longURL = urlDatabase[shortURL].longURL;
   const templeateVars = {
     user: users[req.session.user_id = 'user_id'],
@@ -103,7 +130,9 @@ app.get('/urls/:id', (req, res) => {
 
 app.post('/urls', (req, res) => {
    if (!req.session.user_id) {
-     res.redirect('/login');
+      return res.send(
+        '<html><body><h2>You need to be logged in to view this page</h2></body></html>\n'
+      );
    }
  
   const id =  generateRandomString();
@@ -115,15 +144,41 @@ app.post('/urls', (req, res) => {
 })
 
 //Functinality for user to delete
-app.get('/urls/:id/delete', (req, res) =>{
+app.post('/urls/:id/delete', (req, res) =>{
   const shortURL = req.params.id;
+  if (!req.session.user_id) {
+    return res.send(
+      '<html><body><h2>You need to be logged in to view this page</h2></body></html>\n'
+    );
+  }
+
+  if (req.session.user_id !== urlDatabase[shortURL].userID) {
+    return res.send(
+      '<html><body><h2>You are not the owner of this URL</h2></body></html>\n'
+    );
+  }
+
   delete urlDatabase[shortURL]; 
   res.redirect("/urls");
 });
 
 //Functinality for user to edit
-app.post('/urls/:id/edit', (req, res) => {
+app.post('/urls/:id', (req, res) => {
+
   const shortURL = req.params.id;
+
+  if (!req.session.user_id) {
+    return res.send(
+      '<html><body><h2>You need to be logged in to view this page</h2></body></html>\n'
+    );
+  }
+
+  if (req.session.user_id !== urlDatabase[shortURL].userID) {
+    return res.send(
+      '<html><body><h2>You are not the owner of this URL</h2></body></html>\n'
+    );
+  }
+
   urlDatabase[shortURL].longURL = req.body.editURL;
   res.redirect('/urls');
 });
@@ -131,7 +186,7 @@ app.post('/urls/:id/edit', (req, res) => {
 app.get('/u/:id', (req, res) =>{
   const shortURL = req.params.id; 
   const longURL = urlDatabase[shortURL];
-  if(!urlDatabase.id){
+  if(!urlDatabase[shortURL]){
     res.send(
       '<html><body><h2>That ID does not exist in the database</h2></body></html>\n'
     );
@@ -142,7 +197,6 @@ app.get('/u/:id', (req, res) =>{
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
 
    //search the users database for the user
     let foundUser;
@@ -155,15 +209,18 @@ app.post('/login', (req, res) => {
     }
 
     // compare user password to request password
-    if (!bcrypt.compareSync('purple-monkey-dinosaur', hashedPassword)) {
+    if (!bcrypt.compareSync(password, foundUser.password)) {
       return res.status(401).send('Incorrect password');
     }
 req.session.user_id = foundUser.id;
  
   res.redirect('/urls');
 });
-
+//check if user exists, if usercookie exists redierects them to url else render login 
 app.get('/login', (req,res) => {
+  if (req.session.user_id){
+    return res.redirect('/urls');
+  } 
   res.render('login');
 });
 
@@ -174,6 +231,9 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+  if (req.session.user_id){
+    return res.redirect('/urls');
+  }
   res.render('register');
  
 });
@@ -181,8 +241,13 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
 
+  if(!email || !password){
+     return res
+       .status(400)
+       .send(`Email and password can't be blank`);
+  }
+  
   //check if user already exists
   const user = getUserByEmail(email, users);
   if (user) {
@@ -194,7 +259,6 @@ app.post('/register', (req, res) => {
   users[user_id] = {
     id: user_id,
     email,
-    password,
   };
 
   users[user_id].password = bcrypt.hashSync(password, 10);
